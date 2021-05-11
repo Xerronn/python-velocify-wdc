@@ -1,5 +1,6 @@
 *.pyc
 *.pyo
 keys.json
+credentials.json
 leadsData.csv
 /env
