@@ -77,18 +77,18 @@ for i in range(12):
     print(f"--- {time.time() - start_time_parsing} seconds for parsing on month {i} ---")
 
     start_time_processing = time.time()
+    rows= {}
     for lead in data:
-        row = {}
         for key in lead.attrib.keys():
-            row[key] = lead.attrib[key]
+            rows.setdefault(key,[]).append(lead.attrib[key])
         #give one version of the ID that is int and one that is string
-        row["EncompassId"] = lead.attrib["Id"]
+        rows.setdefault("EncompassId",[]).append(lead.attrib["Id"])
 
         try:
             #campaign table
             campaign = lead.find("Campaign")
             for key in campaign.attrib.keys():
-                row[key] = campaign.attrib[key]
+                rows.setdefault(key,[]).append(campaign.attrib[key])
         except:
             pass
         
@@ -96,7 +96,7 @@ for i in range(12):
             #status table
             status = lead.find("Status")
             for key in status.attrib.keys():
-                row[key] = status.attrib[key]
+                rows.setdefault(key,[]).append(status.attrib[key])
         except:
             pass
         
@@ -104,14 +104,14 @@ for i in range(12):
             #agent table
             agent = lead.find("Agent")
             for key in agent.attrib.keys():
-                row[key] = agent.attrib[key]
+                rows.setdefault(key,[]).append(agent.attrib[key])
         except:
             pass
 
-        #dataframes are slow but they are fine for this instance.
-        start_time_df = time.time()
-        leadsDF = leadsDF.append(row, ignore_index=True)
-        print(f"--- {time.time() - start_time_df} seconds for df append on month {i} ---")
+    #dataframes are slow but they are fine for this instance.
+    start_time_df = time.time()
+    leadsDF = pd.DataFrame.from_dict(rows,orient='index').transpose()
+    print(f"--- {time.time() - start_time_df} seconds for df append on month {i} ---")
     
     if i == 0:
         leadsDF.to_csv("LeadsData.csv")
