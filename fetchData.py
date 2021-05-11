@@ -1,4 +1,5 @@
 import os
+import json
 from google.cloud import storage
 import requests
 import pandas as pd
@@ -11,6 +12,9 @@ import time
 
 #generate a google service account with json keys, add them to the bucket add data permission group
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "keys.json"
+
+with open('credentials.json') as f:
+    credentials = json.load(f)
 
 def upload_blob(bucket_name, source_file_name, destination_blob_name):
     """Uploads a file to the bucket."""
@@ -47,15 +51,15 @@ today = datetime.now() + dateutil.relativedelta.relativedelta(days=1)
 yearAgo = today + dateutil.relativedelta.relativedelta(years=-1)
 
 #paginate through one month intervals until reaching one year
-leadsDF = pd.DataFrame({"Id":pd.Series([], dtype=int)})
 for i in range(12):
+    leadsDF = pd.DataFrame({"Id":pd.Series([], dtype=int)})
     print(f"Getting month {i} data...")
     
     attempt = 0
     while(True):
         try:
             start_time_query = time.time()
-            query = requests.get("https://service.prod.velocify.com/ClientService.asmx/getLeads?username=<username>&password=<password>&from="
+            query = requests.get(f"https://service.prod.velocify.com/ClientService.asmx/getLeads?username={credentials['username']}&password={credentials['password']}&from="
             f"{(yearAgo + dateutil.relativedelta.relativedelta(months=i, days=-1)).strftime('%m/%d/%Y')}&to={(yearAgo + dateutil.relativedelta.relativedelta(months=i+1)).strftime('%m/%d/%Y')}")
             print(f"--- {time.time() - start_time_query} seconds for query on month {i} ---")
             break
@@ -104,10 +108,18 @@ for i in range(12):
         except:
             pass
 
+        #dataframes are slow but they are fine for this instance.
+        start_time_df = time.time()
         leadsDF = leadsDF.append(row, ignore_index=True)
+        print(f"--- {time.time() - start_time_df} seconds for df append on month {i} ---")
+    
+    if i == 0:
+        leadsDF.to_csv("LeadsData.csv")
+    else:
+        leadsDF.to_csv("LeadsData.csv", mode='a', header=False)
+
     print(f"--- {time.time() - start_time_processing} seconds for processing on month {i} ---")
 
-leadsDF.to_csv("LeadsData.csv")
 upload_blob("angel_oak", "LeadsData.csv", f"LeadsTest{datetime.now().strftime('%d-%m-%Y_%H:%M:%S')}.csv")
 
 print("--- %s seconds ---" % (time.time() - start_time))
