@@ -2,7 +2,6 @@ import os
 import json
 from google.cloud import storage
 import requests
-import pandas as pd
 import csv
 import xml.etree.ElementTree as ET
 from datetime import datetime
@@ -69,15 +68,13 @@ today = datetime.now() + dateutil.relativedelta.relativedelta(days=1)
 
 yearAgo = today + dateutil.relativedelta.relativedelta(years=-1)
 
+#leads
 #paginate through one month intervals until reaching one year
-for i in range(12):
-    leadsDF = pd.DataFrame({"Id":pd.Series([], dtype=int)})
-    
-    
+for i in range(12): 
     attempt = 0
     while(True):
         try:
-            log.info(f"Getting month {i} data...")
+            log.info(f"Getting month {(yearAgo + dateutil.relativedelta.relativedelta(months=i, days=-1)).strftime('%m/%d/%Y')} data...")
             start_time_query = time.time()
 
             query = requests.get(f"https://service.prod.velocify.com/ClientService.asmx/getLeads?username={credentials['username']}&password={credentials['password']}&from="
@@ -113,8 +110,15 @@ for i in range(12):
     leadFields["LeadId"] = []
     for col in fieldCols:
         leadFields[col] = []
+    leadActionLogs = {}
+    leadAssignmentLogs = {}
+    leadCreationLogs = {}
+    leadDistributionLogs = {}
+    leadEmailLogs = {}
+    leadStatusLogs = {}
     
     for lead in data:
+        ################################
         #start of lead attributes table
         for key in lead.attrib.keys():
             leadAttribs.setdefault(key,[]).append(lead.attrib[key])
@@ -145,7 +149,9 @@ for i in range(12):
         except:
             pass
         #End of lead attributes table
+        ##############################
 
+        #############################
         #start of lead fields table
         #foreign key to field attributes table
         leadFields.setdefault("LeadId",[]).append(lead.attrib["Id"])
@@ -163,6 +169,22 @@ for i in range(12):
                 leadFields[key].append(currentLeadFields[key])
             else:
                 leadFields[key].append("")
+        #end of the lead fields table
+        ##############################
+
+        ##############################
+        #start of the log tables
+        logs = lead.find("Logs")
+
+        try:
+            #status logs table
+            statusLogs = logs.find("StatusLog")
+            for l in statusLogs:
+                leadStatusLogs.setdefault("LeadId", []).append(lead.attrib["Id"])
+                for key in l.attrib.keys():
+                    leadStatusLogs.setdefault(key, []).append(l.attrib[key])
+        except:
+            pass
 
     log.info(f"--- {time.time() - start_time_processing} seconds for processing on month {i} ---")        
     
@@ -170,12 +192,15 @@ for i in range(12):
     if i == 0:
         dictToCsv(leadAttribs, "LeadAttributes.csv")
         dictToCsv(leadFields, "LeadFields.csv")
+        dictToCsv(leadStatusLogs, "LeadStatusLogs.csv")
     else:
         dictToCsv(leadAttribs, "LeadAttributes.csv", headers=False, append=True)
         dictToCsv(leadFields, "LeadFields.csv", headers=False, append=True)
+        dictToCsv(leadStatusLogs, "LeadStatusLogs.csv", headers=False, append=True)
     log.info(f"--- {time.time() - start_time_csv} seconds for csv writing on month {i} ---")  
 
-uploadTime = datetime.now().strftime('%d-%m-%Y_%H:%M:%S')
+
+#upload the files to google cloud
 upload_blob("angel_oak", "LeadAttributes.csv", f"{uploadTime}/LeadAttributes.csv")
 upload_blob("angel_oak", "LeadFields.csv", f"{uploadTime}/LeadFields.csv")
 
