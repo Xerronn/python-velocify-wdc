@@ -186,22 +186,89 @@ for i in range(12):
         except:
             pass
 
+        try:
+            #action logs table
+            actionLogs = logs.find("ActionLog")
+            for l in actionLogs:
+                leadActionLogs.setdefault("LeadId", []).append(lead.attrib["Id"])
+                for key in l.attrib.keys():
+                    leadActionLogs.setdefault(key, []).append(l.attrib[key])
+        except:
+            pass
+
+        try:
+            #email logs table
+            emailLogs = logs.find("EmailLog")
+            for l in emailLogs:
+                leadEmailLogs.setdefault("LeadId", []).append(lead.attrib["Id"])
+                for key in l.attrib.keys():
+                    leadEmailLogs.setdefault(key, []).append(l.attrib[key])
+        except:
+            pass
+
+        try:
+            #distribution logs table
+            distributionLogs = logs.find("DistributionLog")
+            for l in distributionLogs:
+                leadDistributionLogs.setdefault("LeadId", []).append(lead.attrib["Id"])
+                for key in l.attrib.keys():
+                    leadDistributionLogs.setdefault(key, []).append(l.attrib[key])
+        except:
+            pass
+
+        try:
+            #creation logs table
+            #no loop for this one. There is only one creation log
+            creationLog = logs.find("CreationLog")
+            leadCreationLogs.setdefault("LeadId", []).append(lead.attrib["Id"])
+            for key in creationLog.attrib.keys():
+                leadCreationLogs.setdefault(key, []).append(creationLog.attrib[key])
+        except:
+            pass
+
+        try:
+            #assignment logs table
+            assignmentLogs = logs.find("AssignmentLog")
+            for l in assignmentLogs:
+                leadAssignmentLogs.setdefault("LeadId", []).append(lead.attrib["Id"])
+                for key in l.attrib.keys():
+                    leadAssignmentLogs.setdefault(key, []).append(l.attrib[key])
+        except:
+            pass
+
     log.info(f"--- {time.time() - start_time_processing} seconds for processing on month {i} ---")        
     
     start_time_csv = time.time()
     if i == 0:
-        dictToCsv(leadAttribs, "LeadAttributes.csv")
-        dictToCsv(leadFields, "LeadFields.csv")
-        dictToCsv(leadStatusLogs, "LeadStatusLogs.csv")
+        dictToCsv(leadAttribs, "csv/LeadAttributes.csv")
+        dictToCsv(leadFields, "csv/LeadFields.csv")
+        dictToCsv(leadStatusLogs, "csv/LeadStatusLogs.csv")
+        dictToCsv(leadActionLogs, "csv/LeadActionLogs.csv")
+        dictToCsv(leadEmailLogs, "csv/LeadEmailLogs.csv")
+        dictToCsv(leadDistributionLogs, "csv/LeadDistributionLogs.csv")
+        dictToCsv(leadCreationLogs, "csv/LeadCreationLogs.csv")
+        dictToCsv(leadAssignmentLogs, "csv/LeadAssignmentLogs.csv")
     else:
-        dictToCsv(leadAttribs, "LeadAttributes.csv", headers=False, append=True)
-        dictToCsv(leadFields, "LeadFields.csv", headers=False, append=True)
-        dictToCsv(leadStatusLogs, "LeadStatusLogs.csv", headers=False, append=True)
+        dictToCsv(leadAttribs, "csv/LeadAttributes.csv", headers=False, append=True)
+        dictToCsv(leadFields, "csv/LeadFields.csv", headers=False, append=True)
+        dictToCsv(leadStatusLogs, "csv/LeadStatusLogs.csv", headers=False, append=True)
+        dictToCsv(leadActionLogs, "csv/LeadActionLogs.csv", headers=False, append=True)
+        dictToCsv(leadEmailLogs, "csv/LeadEmailLogs.csv", headers=False, append=True)
+        dictToCsv(leadDistributionLogs, "csv/LeadDistributionLogs.csv", headers=False, append=True)
+        dictToCsv(leadCreationLogs, "csv/LeadCreationLogs.csv", headers=False, append=True)
+        dictToCsv(leadAssignmentLogs, "csv/LeadAssignmentLogs.csv", headers=False, append=True)
     log.info(f"--- {time.time() - start_time_csv} seconds for csv writing on month {i} ---")  
 
 
 #upload the files to google cloud
-upload_blob("angel_oak", "LeadAttributes.csv", f"{uploadTime}/LeadAttributes.csv")
-upload_blob("angel_oak", "LeadFields.csv", f"{uploadTime}/LeadFields.csv")
+uploadTime = datetime.now().strftime('%d-%m-%Y_%H:%M:%S')
+upload_blob("angel_oak", "csv/LeadAttributes.csv", f"{uploadTime}/LeadAttributes.csv")
+upload_blob("angel_oak", "csv/LeadFields.csv", f"{uploadTime}/LeadFields.csv")
+upload_blob("angel_oak", "csv/LeadActionLogs.csv", f"{uploadTime}/LeadActionLogs.csv")
+upload_blob("angel_oak", "csv/LeadAssignmentLogs.csv", f"{uploadTime}/LeadAssignmentLogs.csv")
+upload_blob("angel_oak", "csv/LeadCreationLogs.csv", f"{uploadTime}/LeadCreationLogs.csv")
+upload_blob("angel_oak", "csv/LeadDistributionLogs.csv", f"{uploadTime}/LeadDistributionLogs.csv")
+upload_blob("angel_oak", "csv/LeadEmailLogs.csv", f"{uploadTime}/LeadEmailLogs.csv")
+upload_blob("angel_oak", "csv/LeadStatusLogs.csv", f"{uploadTime}/LeadStatusLogs.csv")
 
 print("--- %s seconds ---" % (time.time() - start_time))
