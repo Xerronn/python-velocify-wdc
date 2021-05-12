@@ -3,10 +3,12 @@ import json
 from google.cloud import storage
 import requests
 import pandas as pd
+import csv
 import xml.etree.ElementTree as ET
 from datetime import datetime
 import dateutil.relativedelta
 import logging as log
+import itertools
 
 #for testing
 import time
@@ -39,6 +41,21 @@ def upload_blob(bucket_name, source_file_name, destination_blob_name):
         )
     )
 
+def dictToCsv(dict, filename, headers=True, append=False):
+    """Converts a dictionary of lists to a csv output"""
+    #dict: the dictionary of lists to write
+    #filename: the directory to write the file
+    #headers: Whether to include headers as the first line in the csv
+    #append: whether to overwrite or append to the file
+    mode = 'w'
+    if append:
+        mode = 'a'
+    with open(filename, mode, newline='', encoding='utf-8') as f:
+        writer = csv.writer(f, delimiter=",")
+        if headers:
+            writer.writerow(dict.keys())
+        writer.writerows(itertools.zip_longest(*dict.values(), fillvalue=""))
+            
 class FailedToConnectError(Exception):
     def __init__(self, salary, message="Failed to connect to API"):
         self.salary = salary
@@ -80,8 +97,23 @@ for i in range(12):
     data = ET.fromstring(query.content)
     
     start_time_processing = time.time()
+
+    #the specific fields we want for the leadFields table. not really proud of this solution, but it does save us from storing a lot of data that we don't need.
+    #it also helps keep things consistent
+    fieldCols = [
+        "First Name", "Last Name", "Home Phone", "Evening Phone", "Loan Amount", "Purchase Price", "Est Purchase Price", "Existing Home Value", "Loan Type", 
+        "Loan Application ID", "Email", "Credit Profile", "Lead Type 1", "Lead Provider Name", "Estimated Credit Profile", "Original Lead Score", "Credit Pulled Date", 
+        "Credit Score Range", "Loan Purpose", "Property State", "Found Home", "Purchase Contract", "Down Payment %", "Self Employed?", "Postal Code", "Zip Code", 
+        "When Will You Be Purchasing This Home?", "Are You Already Working With An Agent?", "Home Type"
+    ]
+
+    #objects to store the data in memory before writing it to file.
     leadAttribs = {}
     leadFields = {}
+    leadFields["LeadId"] = []
+    for col in fieldCols:
+        leadFields[col] = []
+    
     for lead in data:
         #start of lead attributes table
         for key in lead.attrib.keys():
@@ -115,30 +147,33 @@ for i in range(12):
         #End of lead attributes table
 
         #start of lead fields table
+        #foreign key to field attributes table
         leadFields.setdefault("LeadId",[]).append(lead.attrib["Id"])
-        try:
-            for field in lead.iter('Field'):
-                leadFields.setdefault("FieldId", []).append(field.attrib["FieldId"])
-                leadFields.setdefault(field.attrib["FieldTitle"], []).append(field.attrib["Value"])
-        except:
-            pass
+
+        #this array is defined to hold the attributes that do exist and their values, so we can fill in the
+        #spots for missing values with blanks
+        currentLeadFields = {}
+        for field in lead.iter('Field'):
+            if field.attrib["FieldTitle"] in fieldCols:
+                currentLeadFields[field.attrib["FieldTitle"]] = field.attrib["Value"]
+        
+        #fill in fields that don't exist as blanks.
+        for key in fieldCols:
+            if key in currentLeadFields.keys():
+                leadFields[key].append(currentLeadFields[key])
+            else:
+                leadFields[key].append("")
 
     log.info(f"--- {time.time() - start_time_processing} seconds for processing on month {i} ---")        
     
-    #dataframes are slow but they are fine for this instance.
-    start_time_df1 = time.time()
-    leadAttribsDF = pd.DataFrame.from_dict(leadAttribs,orient='index').transpose()
-    log.info(f"--- {time.time() - start_time_df1} seconds for df creation on month {i} ---")   
-    start_time_df2 = time.time()
-    leadFieldsDF = pd.DataFrame.from_dict(leadFields,orient='index').transpose()
-    log.info(f"--- {time.time() - start_time_df2} seconds for df creation on month {i} ---")     
-    
+    start_time_csv = time.time()
     if i == 0:
-        leadAttribsDF.to_csv("LeadAttributes.csv")
-        leadFieldsDF.to_csv("LeadFields.csv")
+        dictToCsv(leadAttribs, "LeadAttributes.csv")
+        dictToCsv(leadFields, "LeadFields.csv")
     else:
-        leadAttribsDF.to_csv("LeadAttributes.csv", mode='a', header=False)
-        leadFieldsDF.to_csv("LeadFields.csv", mode='a', header=False)
+        dictToCsv(leadAttribs, "LeadAttributes.csv", headers=False, append=True)
+        dictToCsv(leadFields, "LeadFields.csv", headers=False, append=True)
+    log.info(f"--- {time.time() - start_time_csv} seconds for csv writing on month {i} ---")  
 
 uploadTime = datetime.now().strftime('%d-%m-%Y_%H:%M:%S')
 upload_blob("angel_oak", "LeadAttributes.csv", f"{uploadTime}/LeadAttributes.csv")
