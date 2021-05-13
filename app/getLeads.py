@@ -1,83 +1,30 @@
-import os
-import json
-from google.cloud import storage
 import requests
-import csv
 import xml.etree.ElementTree as ET
 from datetime import datetime
 import dateutil.relativedelta
 import logging as log
-import itertools
-
-#for testing
+from uploadData import getCredentials, dictToCsv, FailedToConnectError
 import time
 
-#generate a google service account with json keys, add them to the bucket's add data permission group
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "keys.json"
 log.basicConfig(level=log.DEBUG)
-
-with open('credentials.json') as f:
-    credentials = json.load(f)
-
-def upload_blob(bucket_name, source_file_name, destination_blob_name):
-    """Uploads a file to the bucket."""
-    # The ID of your GCS bucket
-    # bucket_name = "your-bucket-name"
-    # The path to your file to upload
-    # source_file_name = "local/path/to/file"
-    # The ID of your GCS object
-    # destination_blob_name = "storage-object-name"
-
-    storage_client = storage.Client()
-    bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(destination_blob_name)
-
-    blob.upload_from_filename(source_file_name)
-
-    print(
-        "File {} uploaded to {}.".format(
-            source_file_name, destination_blob_name
-        )
-    )
-
-def dictToCsv(dict, filename, headers=True, append=False):
-    """Converts a dictionary of lists to a csv output"""
-    #dict: the dictionary of lists to write
-    #filename: the directory to write the file
-    #headers: Whether to include headers as the first line in the csv
-    #append: whether to overwrite or append to the file
-    mode = 'w'
-    if append:
-        mode = 'a'
-    with open(filename, mode, newline='', encoding='utf-8') as f:
-        writer = csv.writer(f, delimiter=",")
-        if headers:
-            writer.writerow(dict.keys())
-        writer.writerows(itertools.zip_longest(*dict.values(), fillvalue=""))
-            
-class FailedToConnectError(Exception):
-    def __init__(self, salary, message="Failed to connect to API"):
-        self.salary = salary
-        self.message = message
-        super().__init__(self.message)
+credentials = getCredentials()
 
 start_time = time.time()
 
 #one day in the future just to get everything
 today = datetime.now() + dateutil.relativedelta.relativedelta(days=1)
-
 yearAgo = today + dateutil.relativedelta.relativedelta(years=-1)
 
-#leads
 #paginate through one month intervals until reaching one year
-for i in range(12): 
+leadSession = requests.Session()
+for i in range(12):
     attempt = 0
     while(True):
         try:
             log.info(f"Getting month {(yearAgo + dateutil.relativedelta.relativedelta(months=i, days=-1)).strftime('%m/%d/%Y')} data...")
             start_time_query = time.time()
 
-            query = requests.get(f"https://service.prod.velocify.com/ClientService.asmx/getLeads?username={credentials['username']}&password={credentials['password']}&from="
+            leadSession = requests.get(f"https://service.prod.velocify.com/ClientService.asmx/getLeads?username={credentials['username']}&password={credentials['password']}&from="
             f"{(yearAgo + dateutil.relativedelta.relativedelta(months=i, days=-1)).strftime('%m/%d/%Y')}&to={(yearAgo + dateutil.relativedelta.relativedelta(months=i+1)).strftime('%m/%d/%Y')}")
 
             log.info(f"--- {time.time() - start_time_query} seconds for query on month {i} ---")
@@ -91,7 +38,7 @@ for i in range(12):
             else:
                 attempt += 1
     
-    data = ET.fromstring(query.content)
+    data = ET.fromstring(leadSession.content)
     
     start_time_processing = time.time()
 
@@ -257,18 +204,9 @@ for i in range(12):
         dictToCsv(leadDistributionLogs, "csv/LeadDistributionLogs.csv", headers=False, append=True)
         dictToCsv(leadCreationLogs, "csv/LeadCreationLogs.csv", headers=False, append=True)
         dictToCsv(leadAssignmentLogs, "csv/LeadAssignmentLogs.csv", headers=False, append=True)
-    log.info(f"--- {time.time() - start_time_csv} seconds for csv writing on month {i} ---")  
+    log.info(f"--- {time.time() - start_time_csv} seconds for csv writing on month {i} ---")
+
+log.info(f"--- {time.time() - start_time_leads} seconds for leads data over 12 months ---")
 
 
-#upload the files to google cloud
-uploadTime = datetime.now().strftime('%d-%m-%Y_%H:%M:%S')
-upload_blob("angel_oak", "csv/LeadAttributes.csv", f"{uploadTime}/LeadAttributes.csv")
-upload_blob("angel_oak", "csv/LeadFields.csv", f"{uploadTime}/LeadFields.csv")
-upload_blob("angel_oak", "csv/LeadActionLogs.csv", f"{uploadTime}/LeadActionLogs.csv")
-upload_blob("angel_oak", "csv/LeadAssignmentLogs.csv", f"{uploadTime}/LeadAssignmentLogs.csv")
-upload_blob("angel_oak", "csv/LeadCreationLogs.csv", f"{uploadTime}/LeadCreationLogs.csv")
-upload_blob("angel_oak", "csv/LeadDistributionLogs.csv", f"{uploadTime}/LeadDistributionLogs.csv")
-upload_blob("angel_oak", "csv/LeadEmailLogs.csv", f"{uploadTime}/LeadEmailLogs.csv")
-upload_blob("angel_oak", "csv/LeadStatusLogs.csv", f"{uploadTime}/LeadStatusLogs.csv")
 
-print("--- %s seconds ---" % (time.time() - start_time))
