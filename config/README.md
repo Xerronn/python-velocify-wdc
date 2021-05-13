@@ -1,0 +1,1 @@
+Store the authentication keys for the velocify API and the google service account credentials json here
