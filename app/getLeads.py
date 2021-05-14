@@ -25,7 +25,7 @@ for i in range(12):
             start_time_query = time.time()
 
             leadSession = requests.get(f"https://service.prod.velocify.com/ClientService.asmx/getLeads?username={credentials['username']}&password={credentials['password']}&from="
-            f"{(yearAgo + dateutil.relativedelta.relativedelta(months=i, days=-1)).strftime('%m/%d/%Y')}&to={(yearAgo + dateutil.relativedelta.relativedelta(months=i+1)).strftime('%m/%d/%Y')}")
+            f"{(yearAgo + dateutil.relativedelta.relativedelta(months=i)).strftime('%m/%d/%Y')}&to={(yearAgo + dateutil.relativedelta.relativedelta(months=i+1)).strftime('%m/%d/%Y')}")
 
             log.info(f"--- {time.time() - start_time_query} seconds for query on month {i} ---")
             break
