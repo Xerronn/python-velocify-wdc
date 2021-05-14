@@ -1,13 +1,15 @@
-from uploadData import getCredentials, dictToCsv, FailedToConnectError
-from requests_futures.sessions import FuturesSession
-from concurrent.futures import as_completed
-from filelock import FileLock, Timeout
-import xml.etree.ElementTree as ET
-from datetime import datetime
-import dateutil.relativedelta
 import logging as log
-import time
 import os
+import time
+import xml.etree.ElementTree as ET
+from concurrent.futures import as_completed
+from datetime import datetime
+
+import dateutil.relativedelta
+from filelock import FileLock, Timeout
+from requests_futures.sessions import FuturesSession
+
+from uploadData import FailedToConnectError, dictToCsv, getCredentials
 
 log.basicConfig(level=log.DEBUG)
 credentials = getCredentials()

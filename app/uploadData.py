@@ -1,10 +1,12 @@
-from google.cloud import storage
-from datetime import datetime
-import itertools
-import time
-import json
 import csv
+import itertools
+import json
 import os
+import time
+from datetime import datetime
+
+from google.cloud import storage
+
 
 def getCredentials():
     with open('config/credentials.json') as f:

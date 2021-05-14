@@ -1,10 +1,12 @@
-import requests
+import logging as log
+import time
 import xml.etree.ElementTree as ET
 from datetime import datetime
+
 import dateutil.relativedelta
-import logging as log
-from uploadData import getCredentials, dictToCsv, FailedToConnectError
-import time
+import requests
+
+from uploadData import FailedToConnectError, dictToCsv, getCredentials
 
 log.basicConfig(level=log.DEBUG)
 credentials = getCredentials()
