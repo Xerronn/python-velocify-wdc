@@ -41,7 +41,7 @@ with FuturesSession() as session:
 
         callData = {}
         for call in data:
-            for key in call.attrib.keys():
+            for key in sorted(call.attrib.keys()):
                 callData.setdefault(key,[]).append(call.attrib[key])
         
         #if file is empty, add headers, else just append

@@ -12,6 +12,10 @@ def getCredentials():
     with open('config/credentials.json') as f:
         return json.load(f)
 
+def getSchema():
+    with open('config/schemas.json') as f:
+        return json.load(f)
+
 def dictToCsv(dict, filename, headers=True, append=False):
     """Converts a dictionary of lists to a csv output"""
     #dict: the dictionary of lists to write
@@ -41,17 +45,20 @@ def upload_blob(bucket_name, source_file_name, destination_blob_name):
     # The ID of your GCS object
     # destination_blob_name = "storage-object-name"
 
-    storage_client = storage.Client()
-    bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(destination_blob_name)
-
-    blob.upload_from_filename(source_file_name)
-
-    print(
-        "File {} uploaded to {}.".format(
+    log.info(
+        "Uploading {} file to {}.".format(
             source_file_name, destination_blob_name
         )
     )
+
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(destination_blob_name)
+    blob.chunk_size = 1024 * 1024 * 10
+
+    blob.upload_from_filename(source_file_name)
+
+    log.info("Success!")
 
 if __name__ == '__main__':
     #generate a google service account with json keys, add them to the bucket's add data permission group
