@@ -16,13 +16,17 @@ schema = getSchema()
 
 start_time = time.time()
 
-#one day in the future just to get everything
+#one day in the future just to make sure we get everything
 today = datetime.now() + dateutil.relativedelta.relativedelta(days=1)
 pastDate = today.replace(day=1) + dateutil.relativedelta.relativedelta(months=-13)
 numDays = (today - pastDate).days
 
+#ensure the days are always odd for pagination pairing(start at 0)
+if (numDays % 2) == 0:
+    numDays = numDays + 1
+
 pag = []
-for i in range(1, numDays, 2):
+for i in range(0, numDays, 2):
     pag.append(f"https://service.prod.velocify.com/ClientService.asmx/GetCallHistoryReport?username={credentials['username']}&password={credentials['password']}&startDate="
         f"{(pastDate + dateutil.relativedelta.relativedelta(days = i)).strftime('%m/%d/%Y')}&endDate={(pastDate + dateutil.relativedelta.relativedelta(days=i + 1)).strftime('%m/%d/%Y')}"
     )

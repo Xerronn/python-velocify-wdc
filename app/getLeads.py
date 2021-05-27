@@ -15,19 +15,20 @@ start_time = time.time()
 
 #one day in the future just to get everything
 today = datetime.now() + dateutil.relativedelta.relativedelta(days=1)
-yearAgo = today + dateutil.relativedelta.relativedelta(years=-1)
+pastDate = today.replace(day=1) + dateutil.relativedelta.relativedelta(months=-13)
+
 
 #paginate through one month intervals until reaching one year
 leadSession = requests.Session()
-for i in range(12):
+for i in range(13):
     attempt = 0
     while(True):
         try:
-            log.info(f"Getting month {(yearAgo + dateutil.relativedelta.relativedelta(months=i, days=-1)).strftime('%m/%d/%Y')} data...")
+            log.info(f"Getting month {(pastDate + dateutil.relativedelta.relativedelta(months=i, days=-1)).strftime('%m/%d/%Y')} data...")
             start_time_query = time.time()
 
             leadSession = requests.get(f"https://service.prod.velocify.com/ClientService.asmx/getLeads?username={credentials['username']}&password={credentials['password']}&from="
-            f"{(yearAgo + dateutil.relativedelta.relativedelta(months=i, days=1)).strftime('%m/%d/%Y')}&to={(yearAgo + dateutil.relativedelta.relativedelta(months=i+1)).strftime('%m/%d/%Y')}")
+            f"{(pastDate + dateutil.relativedelta.relativedelta(months=i)).strftime('%m/%d/%Y')}&to={(pastDate + dateutil.relativedelta.relativedelta(months=i+1)).strftime('%m/%d/%Y')}")
 
             log.info(f"--- {time.time() - start_time_query} seconds for query on month {i} ---")
             break
@@ -199,4 +200,4 @@ for i in range(12):
         dictToCsv(leadAssignmentLogs, "csv/LeadAssignmentLogs.csv", headers=False, append=True)
     log.info(f"--- {time.time() - start_time_csv} seconds for csv writing on month {i} ---")
 
-log.info(f"--- {time.time() - start_time} seconds for leads data over 12 months ---")
+log.info(f"--- {time.time() - start_time} seconds for leads data over 13 months ---")
