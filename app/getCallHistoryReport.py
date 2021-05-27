@@ -31,11 +31,12 @@ for i in range(0, numDays, 2):
         f"{(pastDate + dateutil.relativedelta.relativedelta(days = i)).strftime('%m/%d/%Y')}&endDate={(pastDate + dateutil.relativedelta.relativedelta(days=i + 1)).strftime('%m/%d/%Y')}"
     )
 
+#make the csv folder if it doesnt Exist
+if not os.path.exists('csv/'):
+    os.mkdir('csv/')
+
 #erase the file contents
-try:
-    open("csv/CallHistoryReport.csv", "w").close()
-except:
-    log.info("First time running, no CallHistoryReport.csv found")
+open("csv/CallHistoryReport.csv", "w").close()
 
 #make sure that the thread prevention file isn't still written for some reason
 if os.path.exists("getCallHistoryReport.lock"):
