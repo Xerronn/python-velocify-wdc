@@ -1,18 +1,17 @@
-import logging as log
 import time
 import xml.etree.ElementTree as ET
 from datetime import datetime
-import json
 import dateutil.relativedelta
 import requests
+import logging as log
 
-from uploadData import FailedToConnectError, dictToCsv, getCredentials, getSchema
+from helpers import FailedToConnectError, dictToCsv, getCredentials, getSchema
 
 log.basicConfig(level=log.DEBUG)
 credentials = getCredentials()
 schema = getSchema()
 
-start_time_leads = time.time()
+start_time = time.time()
 
 #one day in the future just to get everything
 today = datetime.now() + dateutil.relativedelta.relativedelta(days=1)
@@ -70,7 +69,7 @@ for i in range(12):
             #campaign table
             campaign = lead.find("Campaign")
             for key in sorted(schema["leadCampaign"]):
-                leadAttribs.setdefault(key, []).append(l.attrib.get(key, ""))
+                leadAttribs.setdefault(key, []).append(campaign.attrib.get(key, ""))
         except:
             pass
         
@@ -78,7 +77,7 @@ for i in range(12):
             #status table
             status = lead.find("Status")
             for key in sorted(schema["leadStatus"]):
-                leadAttribs.setdefault(key, []).append(l.attrib.get(key, ""))
+                leadAttribs.setdefault(key, []).append(status.attrib.get(key, ""))
         except:
             pass
         
@@ -86,7 +85,7 @@ for i in range(12):
             #agent table
             agent = lead.find("Agent")
             for key in sorted(schema["leadAgent"]):
-                leadAttribs.setdefault(key, []).append(l.attrib.get(key, ""))
+                leadAttribs.setdefault(key, []).append(agent.attrib.get(key, ""))
         except:
             pass
         #End of lead attributes table
@@ -163,7 +162,7 @@ for i in range(12):
             creationLog = logs.find("CreationLog")
             leadCreationLogs.setdefault("LeadId", []).append(lead.attrib["Id"])
             for key in sorted(schema["creationLog"]):
-                leadCreationLogs.setdefault(key, []).append(l.attrib.get(key, ""))
+                leadCreationLogs.setdefault(key, []).append(creationLog.attrib.get(key, ""))
         except:
             pass
 
@@ -200,7 +199,4 @@ for i in range(12):
         dictToCsv(leadAssignmentLogs, "csv/LeadAssignmentLogs.csv", headers=False, append=True)
     log.info(f"--- {time.time() - start_time_csv} seconds for csv writing on month {i} ---")
 
-log.info(f"--- {time.time() - start_time_leads} seconds for leads data over 12 months ---")
-
-
-
+log.info(f"--- {time.time() - start_time} seconds for leads data over 12 months ---")

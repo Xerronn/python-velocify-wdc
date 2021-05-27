@@ -6,13 +6,13 @@ from concurrent.futures import as_completed
 from datetime import datetime
 
 import dateutil.relativedelta
-from filelock import FileLock, Timeout
 from requests_futures.sessions import FuturesSession
 
-from uploadData import FailedToConnectError, dictToCsv, getCredentials
+from helpers import FailedToConnectError, dictToCsv, getCredentials, getSchema
 
 log.basicConfig(level=log.DEBUG)
 credentials = getCredentials()
+schema = getSchema()
 
 start_time = time.time()
 
@@ -41,8 +41,8 @@ with FuturesSession() as session:
 
         callData = {}
         for call in data:
-            for key in sorted(call.attrib.keys()):
-                callData.setdefault(key,[]).append(call.attrib[key])
+            for key in sorted(schema["callHistoryReport"]):
+                callData.setdefault(key,[]).append(call.attrib.get(key, ""))
         
         #if file is empty, add headers, else just append
         #solution to multithreading file writing. I check to see if a lock file exists, 
