@@ -32,7 +32,10 @@ for i in range(0, numDays, 2):
     )
 
 #erase the file contents
-open("csv/CallHistoryReport.csv", "w").close()
+try:
+    open("csv/CallHistoryReport.csv", "w").close()
+except:
+    log.info("First time running, no CallHistoryReport.csv found")
 
 #make sure that the thread prevention file isn't still written for some reason
 if os.path.exists("getCallHistoryReport.lock"):
