@@ -18,19 +18,23 @@ start_time = time.time()
 
 #one day in the future just to get everything
 today = datetime.now() + dateutil.relativedelta.relativedelta(days=1)
-yearAgo = today + dateutil.relativedelta.relativedelta(years=-1)
+pastDate = today.replace(day=1) + dateutil.relativedelta.relativedelta(months=-13)
+numDays = (today - pastDate).days
 
-pag=[]
-#368 just to be safe
-for i in range(1, 368, 2):
+pag = []
+for i in range(1, numDays, 2):
     pag.append(f"https://service.prod.velocify.com/ClientService.asmx/GetCallHistoryReport?username={credentials['username']}&password={credentials['password']}&startDate="
-        f"{(yearAgo + dateutil.relativedelta.relativedelta(days = i - 1)).strftime('%m/%d/%Y')}&endDate={(yearAgo + dateutil.relativedelta.relativedelta(days=i)).strftime('%m/%d/%Y')}"
+        f"{(pastDate + dateutil.relativedelta.relativedelta(days = i)).strftime('%m/%d/%Y')}&endDate={(pastDate + dateutil.relativedelta.relativedelta(days=i + 1)).strftime('%m/%d/%Y')}"
     )
 
 #erase the file contents
 open("csv/CallHistoryReport.csv", "w").close()
+
+#make sure that the thread prevention file isn't still written for some reason
 if os.path.exists("getCallHistoryReport.lock"):
     os.remove("getCallHistoryReport.lock")
+
+#async call for requests
 with FuturesSession() as session:
     futures = [session.get(req) for req in pag]
     for future in as_completed(futures):
@@ -43,13 +47,14 @@ with FuturesSession() as session:
         for call in data:
             for key in sorted(schema["callHistoryReport"]):
                 callData.setdefault(key,[]).append(call.attrib.get(key, ""))
-        
-        #if file is empty, add headers, else just append
+            
         #solution to multithreading file writing. I check to see if a lock file exists, 
         # if it doesn't you make one then can edit the file. if it does, wait until there isn't
         while(True):
             if not os.path.exists("getCallHistoryReport.lock"):
                 open("getCallHistoryReport.lock", 'w').close()
+
+                #if file is empty, add headers, else just append
                 if os.stat("csv/CallHistoryReport.csv").st_size == 0:
                     dictToCsv(callData, "csv/CallHistoryReport.csv")
                 else:
