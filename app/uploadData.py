@@ -35,7 +35,7 @@ def upload_blob(bucket_name, source_file_name, destination_blob_name):
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "config/keys.json"
 
 start_time = time.time()
-uploadTime = datetime.now().strftime('%d-%m-%Y_%H:%M:%S')
+uploadTime = datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
 
 upload_blob("angel_oak", "csv/LeadAttributes.csv", f"{uploadTime}/LeadAttributes.csv")
 upload_blob("angel_oak", "csv/LeadFields.csv", f"{uploadTime}/LeadFields.csv")
