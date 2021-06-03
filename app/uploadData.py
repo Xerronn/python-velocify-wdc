@@ -37,6 +37,7 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "config/keys.json"
 start_time = time.time()
 uploadTime = datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
 
+upload_blob("angel_oak", "csv/FirstAssignment.csv", f"{uploadTime}/FirstAssignment.csv")
 upload_blob("angel_oak", "csv/LeadAttributes.csv", f"{uploadTime}/LeadAttributes.csv")
 upload_blob("angel_oak", "csv/LeadFields.csv", f"{uploadTime}/LeadFields.csv")
 upload_blob("angel_oak", "csv/LeadActionLogs.csv", f"{uploadTime}/LeadActionLogs.csv")
