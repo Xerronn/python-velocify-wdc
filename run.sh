@@ -6,6 +6,7 @@ cd "$parent_path"
 source env/bin/activate
 python app/getLeads.py &
 python app/getCallHistoryReport.py &
+python app/getFirstAssignment.py &
 wait
 python app/truncate.py
 wait

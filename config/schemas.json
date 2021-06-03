@@ -153,5 +153,11 @@
         "LogId",
         "StatusId",
         "StatusTitle"
+    ],
+    "firstAssignment": [
+        "Id",
+        "FirstAssignment_x002F_DistributionDate",
+        "FirstAssignment_x002F_DistributionUser",
+        "TimeZone"
     ]
 }
